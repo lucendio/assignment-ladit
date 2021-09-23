@@ -52,7 +52,7 @@ func (bl *Blocklist) Add( cidr string, ttl int32 ) error {
 }
 
 
-func (bl *Blocklist) IsBlocked( ipAddress string ) ( bool, error ) {
+func (bl *Blocklist) IsBlocked( ipAddress string ) (bool, error) {
     ip := net.ParseIP( ipAddress )
     if ip == nil {
         return true, errors.New( "invalid IP address" )
@@ -77,4 +77,9 @@ func (bl *Blocklist) IsBlocked( ipAddress string ) ( bool, error ) {
     }
 
     return false, nil
+}
+
+
+func (bl *Blocklist) Count() int {
+    return len(bl.entries)
 }

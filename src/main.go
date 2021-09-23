@@ -1,10 +1,8 @@
 package main
 
 import (
-    "blocksvc/blocking"
     "context"
     "fmt"
-    "io"
     "log"
     "net/http"
     "os"
@@ -18,6 +16,8 @@ import (
 const (
     DEFAULT_PORT = 3000
     DEFAULT_HOST = "localhost"
+    DEFAULT_ENV = "development"
+    DEFAULT_ACCESS_TOKEN = "foo" // TODO: must be required and not empty
 )
 
 
@@ -28,11 +28,6 @@ func main() {
     signal.Notify( osSignaling, syscall.SIGINT )
     signal.Notify( osSignaling, syscall.SIGTERM )
     signal.Notify( osSignaling, syscall.SIGQUIT )
-
-    router := http.NewServeMux()
-    router.HandleFunc("/healthcheck", func( res http.ResponseWriter, req *http.Request ){
-        io.WriteString( res, "Hello, world!\n" )
-    })
 
     server := &http.Server{
         Addr: fmt.Sprintf( "%s:%d", DEFAULT_HOST, DEFAULT_PORT ),
@@ -50,9 +45,6 @@ func main() {
         }
     }()
 
-    blocklist := blocking.New()
-    blocklist.Add("192.168.2.0/24", 600)
-
     shuttingDown := context.TODO()
 
     for {
@@ -60,13 +52,13 @@ func main() {
             case <-osSignaling:
                 log.Println( "Gracefully shutting down HTTP server" )
 
-                var finishShutdown context.CancelFunc
-                shuttingDown, finishShutdown = context.WithTimeout( context.Background(), time.Second * 15 )
+                var concludeShutdown context.CancelFunc
+                shuttingDown, concludeShutdown = context.WithTimeout( context.Background(), time.Second * 15 )
                 err := server.Shutdown( shuttingDown )
                 if err != nil {
                     log.Printf("HTTP server failed to shut down: %v", err)
                 }
-                finishShutdown()
+                concludeShutdown()
 
             case <-shuttingDown.Done():
                 log.Printf("Done and Done!")
