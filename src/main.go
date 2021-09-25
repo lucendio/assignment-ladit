@@ -2,6 +2,7 @@ package main
 
 import (
     "context"
+    "errors"
     "fmt"
     "log"
     "net/http"
@@ -37,7 +38,7 @@ func main() {
     go func(){
         err := server.ListenAndServe()
         if err != nil {
-            if err == http.ErrServerClosed {
+            if errors.Is( err, http.ErrServerClosed ){
                 log.Println( "HTTP server closed" )
             } else {
                 log.Fatalf( "HTTP server failed to start: %s", err )

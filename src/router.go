@@ -1,8 +1,9 @@
 package main
 
-
 import (
     "encoding/base64"
+    "errors"
+    "net"
     "net/http"
     "strings"
 
@@ -33,7 +34,7 @@ var router = func() *gin.Engine {
     allowed.GET( "/stats", getStatisticsHandler( blocklist ) )
 
     restricted := allowed.Group( "/", authenticationMiddleware )
-    restricted.POST( "/block", getBlockCidrHandler )
+    restricted.POST( "/block", getBlockCidrHandler( blocklist ) )
 
     return r
 }()
@@ -41,6 +42,7 @@ var router = func() *gin.Engine {
 
 
 func healthHandler( ctx *gin.Context ){
+    // TODO: add a global healthiness state (bool) variable and serve respective code here
     ctx.AbortWithStatus( http.StatusOK )
 }
 
@@ -52,10 +54,40 @@ func getStatisticsHandler( bl *blocking.Blocklist ) func( *gin.Context ) {
 }
 
 
-func getBlockCidrHandler( ctx *gin.Context ){
-    ctx.String( http.StatusOK, "%s - BlockCIDR", ctx.Request.Method )
-}
+func getBlockCidrHandler( bl *blocking.Blocklist ) func( *gin.Context ) {
+    type blockRequestBody struct {
+        Cidr string `form:"cidr" json:"cidr" binding:"required"`
+        Ttl int32   `form:"ttl" json:"ttl" binding:"required"`
+    }
 
+    return func( ctx *gin.Context ){
+        var body blockRequestBody
+        if err := ctx.ShouldBindJSON( &body ); err != nil {
+            ctx.AbortWithStatus( http.StatusBadRequest )
+            return
+        }
+
+        err := bl.Add( body.Cidr, body.Ttl )
+        if err != nil {
+            var cidrParseError *net.ParseError
+            if errors.As( err, &cidrParseError ){
+                ctx.AbortWithStatus( http.StatusBadRequest )
+                return
+            }
+            if errors.Is( err, blocking.ErrCidrAlreadyExists ){
+                // FUTUREWORK: it might be desired to inform the client about
+                //             the TTL of the existing entry
+                ctx.AbortWithStatus( http.StatusForbidden )
+                return
+            }
+            // NOTE: undesired, no other option left at this point
+            ctx.AbortWithStatus( http.StatusInternalServerError )
+            return
+        }
+
+        ctx.AbortWithStatus( http.StatusOK )
+    }
+}
 
 
 func getBlockingMiddleware( bl *blocking.Blocklist ) func( *gin.Context ) {

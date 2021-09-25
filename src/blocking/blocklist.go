@@ -41,11 +41,12 @@ func New() *Blocklist {
 func (bl *Blocklist) Add( cidr string, ttl int32 ) error {
     _, ipNet, err := net.ParseCIDR( cidr )
     if err != nil {
+        // NOTE: is net.ParseError
         return err
     }
 
     if _, exists := bl.entries[ cidr ]; exists {
-        return errors.New( "blocked CIDR cannot be overwritten" )
+        return ErrCidrAlreadyExists
     }
 
     bl.entries[ipNet.String()] = &blockentry{
