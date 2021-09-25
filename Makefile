@@ -24,6 +24,11 @@ $(GOPATH):
 	cd $(MKFILE_DIR)/src \
 		&& go get -d
 
+.PHONY: run
+run:
+	cd $(MKFILE_DIR)/src \
+	&& go run \
+		$(MKFILE_DIR)/src/*.go
 
 .PHONY: build $(BIN_DIR)/artifact.bin
 build: $(BIN_DIR)/artifact.bin
@@ -43,8 +48,8 @@ test:
 		-v $(MKFILE_DIR)/src/...
 
 
-.PHONY: run
-run:
+.PHONY: exec
+exec:
 	chmod +x $(BIN_DIR)/artifact.bin
 	exec $(BIN_DIR)/artifact.bin
 

@@ -24,11 +24,17 @@ func (be *blockentry) hasExpired() bool {
 
 type Blocklist struct {
     entries map[string]*blockentry
+    accepted int
+    blocked int
 }
 
 
 func New() *Blocklist {
-    return &Blocklist{ entries: make( map[string]*blockentry ) }
+    return &Blocklist{
+        entries: make( map[string]*blockentry ),
+        accepted: 0,
+        blocked: 0,
+    }
 }
 
 
@@ -72,14 +78,26 @@ func (bl *Blocklist) IsBlocked( ipAddress string ) (bool, error) {
                 continue
             }
 
+            bl.blocked += 1
             return true, nil
         }
     }
 
+    bl.accepted += 1
     return false, nil
 }
 
 
-func (bl *Blocklist) Count() int {
-    return len(bl.entries)
+type statistics struct {
+    Amount int      `json:"cidrs"`
+    Blocked int     `json:"blocked_requests"`
+    Accepted int    `json:"accepted_requests"`
+}
+
+func (bl *Blocklist) Statistics() *statistics {
+    return &statistics{
+        Amount: len(bl.entries),
+        Accepted: bl.accepted,
+        Blocked: bl.blocked,
+    }
 }
