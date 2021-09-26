@@ -1,4 +1,4 @@
-SHELL := '/bin/bash'
+SHELL := /usr/bin/env bash -euo pipefail
 
 .DEFAULT_GOAL := default
 
@@ -8,6 +8,8 @@ LOCAL_DIR := $(abspath $(MKFILE_DIR)/.local)
 
 BIN_DIR	  := $(LOCAL_DIR)/bin
 
+
+export PATH := $(BIN_DIR):$(PATH)
 
 export GOPATH = $(LOCAL_DIR)/cache/go
 export GO111MODULE = on
@@ -38,14 +40,21 @@ $(BIN_DIR)/artifact.bin:
 		-o $(@) \
 		$(MKFILE_DIR)/src/*.go
 
+.PHONY: image
+image:
+	docker build \
+		--file $(MKFILE_DIR)/Containerfile \
+		--tag 'blocksvc' \
+		$(MKFILE_DIR)
+
 
 .PHONY: test
 .SILENT: test
 test:
-	go clean -testcache
-	go test \
+	cd $(MKFILE_DIR)/src \
+	&& go test \
 		-race \
-		-v $(MKFILE_DIR)/src/...
+		$(MKFILE_DIR)/src/...
 
 
 .PHONY: exec
@@ -58,3 +67,11 @@ exec:
 clean:
 	rm -rf \
 		$(LOCAL_DIR)
+
+
+.PHONY: tf-%
+tf-%: export TF_DATA_DIR = $(LOCAL_DIR)/terraform
+tf-%:
+	terraform \
+		-chdir='$(MKFILE_DIR)/terraform' \
+		$(*)
