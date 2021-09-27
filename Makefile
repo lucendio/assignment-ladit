@@ -28,9 +28,9 @@ $(GOPATH):
 
 .PHONY: run
 run:
+	# encoded: c2Vuc2l0aXZlCg==
 	cd $(MKFILE_DIR)/src \
-	&& go run \
-		$(MKFILE_DIR)/src/*.go
+	&& ACCESS_TOKEN='sensitive' go run .
 
 .PHONY: build $(BIN_DIR)/artifact.bin
 build: $(BIN_DIR)/artifact.bin

@@ -10,7 +10,6 @@ FROM docker.io/golang:1.17.1 AS build-stage
 
 WORKDIR /go/src
 COPY ./src ./
-RUN go get -d
 RUN GOOS=linux GOARCH=amd64 go build -v -o /go/artifact.bin ./*.go
 
 
@@ -39,5 +38,3 @@ USER 1001
 
 ENTRYPOINT [ "blocksvc" ]
 CMD [ ]
-
-EXPOSE 3000

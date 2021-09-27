@@ -18,8 +18,18 @@ func newRouter( config *configuration.Config ) (*gin.Engine, *blocking.Blocklist
     router := gin.New()
 
     router.Use( gin.Recovery() )
-    // TODO: adjust logger according to configured log level and environment
-    router.Use( gin.Logger() )
+
+    switch config.Environment {
+        case "production":
+            gin.SetMode( gin.ReleaseMode )
+        case "testing":
+            gin.SetMode( gin.TestMode )
+        case "development":
+            router.Use( gin.Logger() )
+            fallthrough
+        default:
+            gin.SetMode( gin.DebugMode )
+    }
 
     blocklist := blocking.New()
 
@@ -41,8 +51,11 @@ func newRouter( config *configuration.Config ) (*gin.Engine, *blocking.Blocklist
 
 
 func healthHandler( ctx *gin.Context ){
-    // TODO: add a global healthiness state (bool) variable and serve respective code here
-    ctx.AbortWithStatus( http.StatusOK )
+    if isHealthy {
+        ctx.AbortWithStatus( http.StatusOK )
+        return
+    }
+    ctx.AbortWithStatus( http.StatusServiceUnavailable )
 }
 
 
@@ -76,7 +89,7 @@ func getBlockCidrHandler( bl *blocking.Blocklist ) func( *gin.Context ) {
             if errors.Is( err, blocking.ErrCidrAlreadyExists ){
                 // FUTUREWORK: it might be desired to inform the client about
                 //             the TTL of the existing entry
-                ctx.AbortWithStatus( http.StatusForbidden )
+                ctx.AbortWithStatus( http.StatusNotModified )
                 return
             }
             // NOTE: undesired, no other option left at this point
@@ -84,7 +97,7 @@ func getBlockCidrHandler( bl *blocking.Blocklist ) func( *gin.Context ) {
             return
         }
 
-        ctx.AbortWithStatus( http.StatusOK )
+        ctx.AbortWithStatus( http.StatusCreated )
     }
 }
 

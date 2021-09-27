@@ -14,6 +14,9 @@ import (
 )
 
 
+var isHealthy = false
+
+
 func main() {
     config, err := configuration.New()
     if err != nil {
@@ -31,7 +34,7 @@ func main() {
         err := server.ListenAndServe()
         if err != nil {
             if errors.Is( err, http.ErrServerClosed ){
-                log.Println( "HTTP server closed" )
+                log.Println( "HTTP server shutdown complete" )
             } else {
                 log.Fatalf( "HTTP server failed to start: %v", err )
             }
@@ -45,10 +48,12 @@ func main() {
     signal.Notify( osSignaling, syscall.SIGQUIT )
 
     shuttingDown := context.TODO()
+    isHealthy = true
 
     for {
         select {
             case <-osSignaling:
+                isHealthy = false
                 log.Println( "Gracefully shutting down HTTP server" )
 
                 var concludeShutdown context.CancelFunc
@@ -60,7 +65,6 @@ func main() {
                 concludeShutdown()
 
             case <-shuttingDown.Done():
-                log.Printf("Done and Done!")
                 return
         }
     }

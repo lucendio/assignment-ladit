@@ -21,6 +21,9 @@ func setup() (*gin.Engine, *blocking.Blocklist) {
     if os.Getenv( "ACCESS_TOKEN" ) == "" {
         os.Setenv( "ACCESS_TOKEN", "some-token" )
     }
+    os.Setenv( "ENV_NAME", "testing" )
+
+    isHealthy = true
 
     config, _ := configuration.New()
     return newRouter( config )
@@ -99,10 +102,18 @@ func TestAuthenticationMiddleware( t *testing.T ){
 func TestHealthHandler( t *testing.T ){
    router, _ := setup()
 
-   res := httptest.NewRecorder()
    req, _ := http.NewRequest( "GET", "/healthcheck", nil )
-   router.ServeHTTP( res, req )
 
+   isHealthy = false
+
+   res := httptest.NewRecorder()
+   router.ServeHTTP( res, req )
+   assert.Equal( t, http.StatusServiceUnavailable, res.Code )
+
+   isHealthy = true
+
+   res = httptest.NewRecorder()
+   router.ServeHTTP( res, req )
    assert.Equal( t, http.StatusOK, res.Code )
 }
 
@@ -173,8 +184,8 @@ func TestBlockCidrHandler( t *testing.T ){
     assert.Equal( t, http.StatusBadRequest, res.Code )
 
     res = run( rightBody )
-    assert.Equal( t, http.StatusOK, res.Code )
+    assert.Equal( t, http.StatusCreated, res.Code )
 
     res = run( rightBodySameCidr )
-    assert.Equal( t, http.StatusForbidden, res.Code )
+    assert.Equal( t, http.StatusNotModified, res.Code )
 }

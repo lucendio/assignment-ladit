@@ -1,9 +1,11 @@
 SRE take-home test - LADIT
 ==========================
 
+
 ## Code
 
 * Golang v1.17
+* located in `./src`
 
 ### Reasoning
 
@@ -13,6 +15,7 @@ SRE take-home test - LADIT
 * due to some time constraints, it was decided to pull in dependencies for all the heavy lifting
   * API server
   * configuration
+  * testing
 * CIDR is used as identifier (not for instance the combination of CIDR and TTL), which means posting
   the same CIDR will have no effect
 * at first, I wanted to decouple blocklist and store to ease adaption for a backing service to manage
@@ -23,12 +26,19 @@ SRE take-home test - LADIT
   outer context's perspective that is tasked to keep the service up and running, e.g. a kubelet.
   Alternatively, one could just exclude private IPs (`IP.IsPrivate()`) or introduce a (configurable)
   list of unblockable IP ranges.
-  
+* adding a new CIDR on `/block` results in *201 Created* instead of *200 OK* as requested
+* additional time constraints resulted in tests only to verify the HTTP API behaviour, instead of
+  integration tests (e.g. for `main.go`) and unit tests (e.g. for `blocking/blocklist.go`)
 
 
 ## Containerfile
 
+* three stages
+* only built and tested with Docker so far
+
 
 ## Infrastructure
 
-* Terraform provider: https://registry.terraform.io/providers/kreuzwerker/docker
+* used recommended Terraform provider: https://registry.terraform.io/providers/kreuzwerker/docker
+* located in `./terraform`
+* no Terraform state management whatsoever, since everything is (currently) applied locally
