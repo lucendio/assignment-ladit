@@ -24,7 +24,7 @@ install: $(GOPATH)
 $(GOPATH):
 	mkdir -p $(GOPATH)
 	cd $(MKFILE_DIR)/src \
-		&& go get -d
+		&& go get -t
 
 .PHONY: run
 run:
@@ -54,6 +54,7 @@ test:
 	cd $(MKFILE_DIR)/src \
 	&& go test \
 		-race \
+		-v \
 		$(MKFILE_DIR)/src/...
 
 

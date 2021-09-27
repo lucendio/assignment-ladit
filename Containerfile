@@ -1,12 +1,12 @@
-FROM docker.io/golang:1.17.1 as test-stage
+FROM docker.io/golang:1.17.1 AS test-stage
 
 WORKDIR /go/src
 COPY ./src ./
-RUN go get -d
-RUN go test -race ./...
+RUN go get -t
+RUN go test -race -failfast ./...
 
 
-FROM docker.io/golang:1.17.1 as build-stage
+FROM docker.io/golang:1.17.1 AS build-stage
 
 WORKDIR /go/src
 COPY ./src ./

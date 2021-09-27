@@ -1,6 +1,7 @@
 package main
 
 import (
+    "blocksvc/configuration"
     "context"
     "errors"
     "fmt"
@@ -13,25 +14,16 @@ import (
 )
 
 
-
-const (
-    DEFAULT_PORT = 3000
-    DEFAULT_HOST = "localhost"
-    DEFAULT_ENV = "development"
-    DEFAULT_ACCESS_TOKEN = "foo" // TODO: must be required and not empty
-)
-
-
-
 func main() {
-    osSignaling := make( chan os.Signal, 1 )
-    signal.Notify( osSignaling, syscall.SIGHUP )
-    signal.Notify( osSignaling, syscall.SIGINT )
-    signal.Notify( osSignaling, syscall.SIGTERM )
-    signal.Notify( osSignaling, syscall.SIGQUIT )
+    config, err := configuration.New()
+    if err != nil {
+        log.Fatalf( "HTTP server failed to start: %v", err )
+    }
+
+    router, _ := newRouter( config )
 
     server := &http.Server{
-        Addr: fmt.Sprintf( "%s:%d", DEFAULT_HOST, DEFAULT_PORT ),
+        Addr: fmt.Sprintf( "%s:%d", config.Host, config.Port ),
         Handler: router,
     }
 
@@ -41,10 +33,16 @@ func main() {
             if errors.Is( err, http.ErrServerClosed ){
                 log.Println( "HTTP server closed" )
             } else {
-                log.Fatalf( "HTTP server failed to start: %s", err )
+                log.Fatalf( "HTTP server failed to start: %v", err )
             }
         }
     }()
+
+    osSignaling := make( chan os.Signal, 1 )
+    signal.Notify( osSignaling, syscall.SIGHUP )
+    signal.Notify( osSignaling, syscall.SIGINT )
+    signal.Notify( osSignaling, syscall.SIGTERM )
+    signal.Notify( osSignaling, syscall.SIGQUIT )
 
     shuttingDown := context.TODO()
 
